@@ -1,6 +1,11 @@
 // Written by Rob Probin and Emily Probin, 3 Jan 2026
 // © Copyright 2025, Rob Probin and Emily Probin
 // こんにちは
+// Compile with: 
+//               g++ simple_rogue_term.cpp -o simple_rogue_term -std=c++23
+// or if you have n older compiler, this works as well:
+//               g++ simple_rogue_term.cpp -o simple_rogue_term -std=c++20
+#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -48,8 +53,7 @@ void at(int x, int y)
 }
 
 
-
-void print_at(int x, int y, string c)
+void print_at(int x, int y, const string& c)
 {
     at(x, y);
     std::cout << c;
@@ -143,7 +147,15 @@ int key()
 //     GAME CODE
 // =======================================================================================
 
-class Player {
+class PrintableObjectInterface {
+public:
+	virtual void draw() = 0;	// pure virtual function makes this class an abstract base class
+private:
+	// no data in an interface
+};
+
+
+class Player : public  PrintableObjectInterface{
 public:
 	void move(int delta_x, int delta_y) { x += delta_x; y += delta_y; }
 	void draw();
@@ -165,20 +177,81 @@ Player::Player() : x(10), y(10) {
 
 class MazeElement {
 public:
-	void draw() { }
+	void draw(int x, int y) { 
+		print_at(x , y, character);
+	}
+	void set_graphic(const string& c) {character = c;}
 private:
-	string x;
+	string character;
 };
 
 class Maze {
 public:
-	void draw() { }
-	Maze(int rows, int columns) : map(rows, vector<MazeElement>(columns)) {}
+	void draw_all() { 
+		int rows = map.size();
+		if(rows == 0) { return; }
+		for(int r=0; r < rows; r++)
+		{
+			int columns = map[r].size();
+			for(int c=0; c < columns; c++)
+			{
+				map[r][c].draw(c+1, r+1);
+			}
+		}
+	}
+	Maze(int rows, int columns) : map(rows, vector<MazeElement>(columns)) { create_maze(); }
 private:
+	void create_maze();
 	vector<vector<MazeElement>> map;
 };
 
+void Maze::create_maze() {
+	int rows = map.size();
+		if(rows == 0) { return; }
+		for(int r=0; r < rows; r++)
+		{
+			int columns = map[r].size();
+			for(int c=0; c < columns; c++)
+			{
+				if (std::rand()%10 == 0) { map[r][c].set_graphic("#"); }
+				else {map[r][c].set_graphic(" ");}
+			}
+		}
+}
 
+class Coordinates {
+	int x;
+	int y;
+};
+
+
+
+class PrintableObject : public PrintableObjectInterface { // 
+public:
+	void draw() = 0;		// still virtual, because of inheritance (and same 'signature', i.e. parameters)
+	//void draw(int x);	// function overloading
+	//void operator+(int x, int y); // operator overloading allows printable objects to be added together, whatever that means :-)
+private:
+	Coordinates position;
+	char representing_char;
+};
+
+class AnimateObject : public PrintableObject {
+public:
+	AnimateObject();
+	~AnimateObject();
+private:
+	
+};
+
+// constructor
+AnimateObject::AnimateObject()
+{
+}
+
+AnimateObject::~AnimateObject()
+{
+}
 
 
 
