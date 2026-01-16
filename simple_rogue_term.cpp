@@ -154,36 +154,17 @@ private:
 	// no data in an interface
 };
 
-
-class Player : public  PrintableObjectInterface{
-public:
-	void move(int delta_x, int delta_y) { x += delta_x; y += delta_y; }
-	void draw();
-	Player();
-private:
-	int x;
-	int y;
-};
-
-
-void Player::draw()
-{
-	print_at(x, y, "😀");
-}
-
-Player::Player() : x(10), y(10) {
-}
-
-
 class MazeElement {
 public:
 	void draw(int x, int y) { 
 		print_at(x , y, character);
 	}
 	void set_graphic(const string& c) {character = c;}
+	const string& get_graphic() const {return character;}
 private:
 	string character;
 };
+
 
 class Maze {
 public:
@@ -198,6 +179,21 @@ public:
 				map[r][c].draw(c+1, r+1);
 			}
 		}
+	}
+	bool valid_move(int x, int y) const {
+		// check if out of bounds
+		// check if wall is there 
+		
+		if (x > map[0].size() || x < 1 || y > map.size() || y < 1) { // check not going out of bounds
+			return false;
+		}
+		if (map[y-1][x-1].get_graphic() != " ") { // check moving into clear space
+			return false;
+		}
+		return true;
+	}
+	void clear_cell(int x, int y) {
+		map[y-1][x-1].set_graphic(" ");
 	}
 	Maze(int rows, int columns) : map(rows, vector<MazeElement>(columns)) { create_maze(); }
 private:
@@ -218,6 +214,36 @@ void Maze::create_maze() {
 			}
 		}
 }
+
+class Player : public  PrintableObjectInterface{
+public:
+	void move(int delta_x, int delta_y, const Maze& maze)
+	{
+		int new_x = x + delta_x;
+		int new_y = y + delta_y;
+		if(maze.valid_move(new_x, new_y))
+		{
+			x = new_x; y = new_y;
+		}
+	}
+	void draw();
+	Player(int start_x, int start_y);
+private:
+	int x;
+	int y;
+};
+
+void Player::draw()
+{
+	print_at(x, y, "@");
+}
+
+Player::Player(int start_x, int start_y) : x(start_x), y(start_y) {
+}
+
+
+
+
 
 class Coordinates {
 	int x;
@@ -256,6 +282,8 @@ AnimateObject::~AnimateObject()
 
 
 
+
+
 // =======================================================================================
 //     main loop
 // =======================================================================================
@@ -282,36 +310,41 @@ int main()
 	//print_at(7,7,s);
 
 
-	Player player;
-	Maze map(TERM_HEIGHT, TERM_WIDTH);
+	const int player_start_x = 10;
+	const int player_start_y = 10;
+	Player player(player_start_x, player_start_y);
+	Maze map(TERM_HEIGHT-2, TERM_WIDTH-2);
+	map.clear_cell(10,10);
 	bool running = true;
 	while(running) {
+		map.draw_all();
+		player.draw();
+		at(0, TERM_HEIGHT);
+		std::cout << std::flush;
+
 		int keyval = key();
 		switch(keyval) {
 			case 'w':
-				player.move(0,-1);
+				player.move(0,-1,map);
 				break;
 			case 's':
-				player.move(0,1);
+				player.move(0,1,map);
 				break;
 			case 'a':
-				player.move(-1,0);
+				player.move(-1,0,map);
 				break;
 			case 'd':
-				player.move(1,0);
+				player.move(1,0,map);
 				break;
 			case ' ':
 				running = false;
 				break;
 			default:
+				std::cout << "Unrecognised key " << keyval << std::endl;
 				running = false;
 				break;
 			}
 			
-			
-		player.draw();
-		at(0, TERM_HEIGHT);
-		std::cout << std::flush;
 	};
 
 	ttyrestore();
